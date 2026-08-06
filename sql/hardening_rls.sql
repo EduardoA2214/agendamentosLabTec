@@ -170,12 +170,18 @@ begin
 end;
 $$;
 
--- 8) Listar agendamentos com filtros — só administrador com sessão válida
+-- 8) Listar agendamentos com filtros — qualquer sessão válida (professor ou
+--    administrador) pode LER; só excluir_agendamento continua exclusivo do admin.
+-- Precisa dropar antes: adicionar o parâmetro p_aula muda a "assinatura" da
+-- função (pro Postgres, isso cria uma função nova em vez de substituir a antiga).
+drop function if exists public.listar_agendamentos(text, date, text, text);
+
 create or replace function public.listar_agendamentos(
   p_token text,
   p_data date default null,
   p_professor text default null,
-  p_materia text default null
+  p_materia text default null,
+  p_aula text default null
 ) returns setof public.agendamentos
 language plpgsql
 security definer
@@ -185,8 +191,8 @@ declare
   v_role text;
 begin
   v_role := public.validar_sessao(p_token);
-  if v_role is distinct from 'administrador' then
-    raise exception 'Não autorizado.';
+  if v_role is null then
+    raise exception 'Sessão inválida ou expirada. Faça login novamente.';
   end if;
 
   return query
@@ -195,6 +201,7 @@ begin
   where (p_data is null or (a.data_hora >= p_data::timestamptz and a.data_hora < (p_data + 1)::timestamptz))
     and (p_professor is null or a.nome_professor ilike '%' || p_professor || '%')
     and (p_materia is null or a.nome_materia ilike '%' || p_materia || '%')
+    and (p_aula is null or a.aulas_agenda = p_aula)
   order by a.data_hora asc;
 end;
 $$;
@@ -204,14 +211,14 @@ revoke all on function public.login_usuario(text, text) from public;
 revoke all on function public.logout_usuario(text) from public;
 revoke all on function public.criar_agendamento(text, text, text, timestamptz, text, text) from public;
 revoke all on function public.excluir_agendamento(text, bigint) from public;
-revoke all on function public.listar_agendamentos(text, date, text, text) from public;
+revoke all on function public.listar_agendamentos(text, date, text, text, text) from public;
 revoke all on function public.validar_sessao(text) from public;
 
 grant execute on function public.login_usuario(text, text) to anon, authenticated;
 grant execute on function public.logout_usuario(text) to anon, authenticated;
 grant execute on function public.criar_agendamento(text, text, text, timestamptz, text, text) to anon, authenticated;
 grant execute on function public.excluir_agendamento(text, bigint) to anon, authenticated;
-grant execute on function public.listar_agendamentos(text, date, text, text) to anon, authenticated;
+grant execute on function public.listar_agendamentos(text, date, text, text, text) to anon, authenticated;
 -- validar_sessao NÃO é liberada pra anon/authenticated: só as funções acima chamam ela internamente.
 
 -- 10) Remove TODAS as policies existentes em "agendamentos" (inclusive a de

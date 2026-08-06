@@ -8,14 +8,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="../css/style.css">
 </head>
-<body class="center">
+<body>
+
+  <div class="topbar">
+    <h1>Agendar Aula</h1>
+    <button type="button" class="secondary" id="btn-logout">Sair</button>
+  </div>
 
   <div class="card">
-    <div class="topbar">
-      <h1>Agendar Aula</h1>
-      <button type="button" class="secondary" id="btn-logout">Sair</button>
-    </div>
-
+    <h2>Novo Agendamento</h2>
     <form id="form-agendamento">
       <div class="form-group">
         <label for="professor">Nome do Professor</label>
@@ -54,6 +55,55 @@
 
       <button type="submit" id="btn-submit">Confirmar Agendamento</button>
     </form>
+  </div>
+
+  <br>
+
+  <div class="card wide">
+    <h2>Horários Já Agendados</h2>
+    <p class="dica">Confira aqui se o horário que você quer já está ocupado antes de agendar.</p>
+    <div class="filtros">
+      <div class="form-group">
+        <label for="filtro-data">Data</label>
+        <input type="date" id="filtro-data">
+      </div>
+      <div class="form-group">
+        <label for="filtro-aula">Aula</label>
+        <select id="filtro-aula">
+          <option value="">Todas</option>
+          <option value="1">1ª aula (08:00 - 08:45)</option>
+          <option value="2">2ª aula (08:45 - 09:30)</option>
+          <option value="3">3ª aula (09:30 - 10:15)</option>
+          <option value="4">4ª aula (10:30 - 11:15)</option>
+          <option value="5">5ª aula (11:15 - 12:00)</option>
+          <option value="6">6ª aula (12:00 - 12:45)</option>
+        </select>
+      </div>
+    </div>
+    <div class="filtros-botoes">
+      <button type="button" id="btn-buscar">Buscar</button>
+      <button type="button" class="secondary" id="btn-limpar">Limpar filtros</button>
+    </div>
+
+    <div class="contador-linha">
+      <span id="contador-resultados" class="contador"></span>
+    </div>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Professor</th>
+            <th>Matéria</th>
+            <th>Data/Hora</th>
+            <th>Aula</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody id="lista-agendamentos">
+          <tr><td colspan="5" class="vazio">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script src="../js/config.js"></script>
