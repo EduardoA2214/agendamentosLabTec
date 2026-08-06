@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Administrador</title>
+  <link rel="icon" type="image/png" href="../assets/icon/icone.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>Painel do Administrador</h1>
+    <button type="button" class="secondary" id="btn-logout">Sair</button>
+  </div>
+
+  <div class="card wide">
+    <h2>Buscar Agendamentos</h2>
+    <div class="filtros">
+      <div class="form-group">
+        <label for="filtro-data">Data</label>
+        <input type="date" id="filtro-data">
+      </div>
+      <div class="form-group">
+        <label for="filtro-professor">Professor</label>
+        <input type="text" id="filtro-professor" placeholder="Nome do professor">
+      </div>
+      <div class="form-group">
+        <label for="filtro-materia">Matéria</label>
+        <input type="text" id="filtro-materia" placeholder="Matéria / disciplina">
+      </div>
+    </div>
+    <div class="filtros-botoes">
+      <button type="button" id="btn-buscar">Buscar</button>
+      <button type="button" class="secondary" id="btn-limpar">Limpar filtros</button>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="card wide">
+    <div class="topbar-tabela">
+      <h2>Agendamentos</h2>
+      <span id="contador-resultados" class="contador"></span>
+    </div>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Professor</th>
+            <th>Matéria</th>
+            <th>Data/Hora</th>
+            <th>Aula</th>
+            <th>Descrição</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="lista-agendamentos">
+          <tr><td colspan="6" class="vazio">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/horarios.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>

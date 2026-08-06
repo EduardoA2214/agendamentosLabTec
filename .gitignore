@@ -1,0 +1,16 @@
+# Credenciais do Supabase (URL + chave) — cada ambiente configura o seu
+js/config.js
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Dependências (caso instale algo via npm no futuro)
+node_modules/
+
+# Arquivos de sistema/editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
