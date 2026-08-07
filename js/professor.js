@@ -14,22 +14,79 @@ form.addEventListener('submit', async (e) => {
   const nome_professor = document.getElementById('professor').value;
   const nome_materia = document.getElementById('materia').value;
   const data = document.getElementById('data').value;
-  const numeroAula = document.getElementById('aula').value;
   const descricao_aula = document.getElementById('descricao_aula').value;
+
+  const aulasSelecionadas = Array.from(document.querySelectorAll('input[name="aula"]:checked'))
+    .map((cb) => cb.value)
+    .sort((a, b) => Number(a) - Number(b));
+
+  if (aulasSelecionadas.length === 0) {
+    erroEl.textContent = 'Selecione ao menos uma aula.';
+    return;
+  }
 
   if (!ehDiaUtil(data)) {
     erroEl.textContent = 'Só é possível agendar de segunda a sexta-feira.';
     return;
   }
 
-  const data_hora = montarDataHora(data, numeroAula);
-
   btnSubmit.disabled = true;
+  btnSubmit.innerText = 'Verificando...';
+
+  // 1) Antes de criar qualquer coisa, checa quais das aulas marcadas já
+  // estão ocupadas nesse dia (consulta somente leitura).
+  const { data: existentes, error: erroConsulta } = await supabaseClient.rpc('listar_agendamentos', {
+    p_token: sessao.token,
+    p_data: data,
+    p_professor: null,
+    p_materia: null,
+    p_aula: null
+  });
+
+  if (erroConsulta) {
+    erroEl.textContent = 'Erro ao verificar horários: ' + erroConsulta.message;
+    btnSubmit.disabled = false;
+    btnSubmit.innerText = 'Confirmar Agendamento';
+    return;
+  }
+
+  const rotulosOcupados = new Set((existentes || []).map((item) => item.aulas_agenda));
+  const aulasOcupadas = aulasSelecionadas.filter((n) => rotulosOcupados.has(rotuloAula(n)));
+  const aulasLivres = aulasSelecionadas.filter((n) => !rotulosOcupados.has(rotuloAula(n)));
+
+  if (aulasOcupadas.length > 0) {
+    if (aulasLivres.length === 0) {
+      erroEl.textContent = 'Todas as aulas selecionadas já estão agendadas: ' + aulasOcupadas.map(rotuloAula).join(', ');
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = 'Confirmar Agendamento';
+      return;
+    }
+
+    const mensagem = `Atenção: ${aulasOcupadas.map(rotuloAula).join(', ')} já está(ão) agendada(s). ` +
+      `Deseja confirmar o agendamento das outras ${aulasLivres.length} aula(s) disponível(is)?`;
+    const autorizado = await confirmar(mensagem, { aviso: true });
+
+    if (!autorizado) {
+      erroEl.textContent = 'Agendamento cancelado — nenhuma aula foi reservada.';
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = 'Confirmar Agendamento';
+      return;
+    }
+  }
+
+  const aulasParaCriar = aulasOcupadas.length > 0 ? aulasLivres : aulasSelecionadas;
+
   btnSubmit.innerText = 'Enviando...';
 
-  try {
-    // A checagem de sessão e de conflito de horário acontece dentro do banco
-    // (função criar_agendamento) — o front-end nunca escreve direto na tabela.
+  // 2) Cria um agendamento por aula liberada. A função criar_agendamento
+  // também recheca o conflito no banco (segurança contra duas pessoas
+  // agendando ao mesmo tempo entre a verificação acima e este envio).
+  const rotulosComFalha = [];
+  let totalCriado = 0;
+
+  for (const numeroAula of aulasParaCriar) {
+    const data_hora = montarDataHora(data, numeroAula);
+
     const { error } = await supabaseClient.rpc('criar_agendamento', {
       p_token: sessao.token,
       p_nome_professor: nome_professor,
@@ -39,17 +96,27 @@ form.addEventListener('submit', async (e) => {
       p_descricao_aula: descricao_aula
     });
 
-    if (error) throw error;
+    if (error) {
+      rotulosComFalha.push(rotuloAula(numeroAula));
+      console.error('Erro detalhado:', error);
+    } else {
+      totalCriado++;
+    }
+  }
 
-    mostrarToast('Agendamento realizado com sucesso!', 'sucesso');
+  btnSubmit.disabled = false;
+  btnSubmit.innerText = 'Confirmar Agendamento';
+
+  if (totalCriado > 0 && rotulosComFalha.length === 0) {
+    mostrarToast(
+      totalCriado === 1 ? 'Agendamento realizado com sucesso!' : `${totalCriado} agendamentos realizados com sucesso!`,
+      'sucesso'
+    );
     form.reset();
-
-  } catch (err) {
-    erroEl.textContent = 'Erro ao realizar agendamento: ' + err.message;
-    console.error('Erro detalhado:', err);
-  } finally {
-    btnSubmit.disabled = false;
-    btnSubmit.innerText = 'Confirmar Agendamento';
+  } else if (totalCriado > 0 && rotulosComFalha.length > 0) {
+    mostrarToast(`${totalCriado} agendamento(s) criado(s). Já estava(m) ocupado(s): ${rotulosComFalha.join(', ')}.`, 'erro');
+  } else {
+    erroEl.textContent = 'Nenhum agendamento criado — já estava(m) ocupado(s): ' + rotulosComFalha.join(', ');
   }
 });
 

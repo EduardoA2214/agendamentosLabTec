@@ -21,13 +21,22 @@ function mostrarToast(mensagem, tipo = 'sucesso') {
   }, 4000);
 }
 
-function confirmar(mensagem) {
+function confirmar(mensagem, opcoes = {}) {
+  const { aviso = false } = opcoes;
+
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
 
     const modal = document.createElement('div');
-    modal.className = 'modal-confirm';
+    modal.className = aviso ? 'modal-confirm modal-aviso' : 'modal-confirm';
+
+    if (aviso) {
+      const icone = document.createElement('div');
+      icone.className = 'modal-icone-aviso';
+      icone.textContent = '⚠️';
+      modal.appendChild(icone);
+    }
 
     const texto = document.createElement('p');
     texto.textContent = mensagem;

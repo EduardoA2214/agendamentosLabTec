@@ -120,6 +120,30 @@ button.danger:hover { background-color: #c0392b; }
   font-size: 12px;
 }
 
+input[type="checkbox"] { width: auto; }
+
+.aulas-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.aula-opcao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-weight: normal;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.aula-opcao:hover { background: #f7f7f7; }
+
 .erro {
   color: #e74c3c;
   font-size: 14px;
@@ -257,6 +281,16 @@ td.acoes button { width: auto; padding: 6px 12px; font-size: 13px; }
   color: #333;
   font-size: 15px;
   line-height: 1.4;
+}
+
+.modal-aviso {
+  border-top: 6px solid #f39c12;
+}
+
+.modal-icone-aviso {
+  font-size: 34px;
+  text-align: center;
+  margin-bottom: 10px;
 }
 
 .modal-botoes {
