@@ -109,6 +109,33 @@ begin
 end;
 $$;
 
+-- 4b) Sessão de professor SEM senha: qualquer visitante que clique em "Sou
+--     Professor" recebe um token de sessão com papel 'professor'. A conta de
+--     professor deixou de exigir autenticação por decisão do dono do site;
+--     administrador continua exigindo usuário/senha (login_usuario acima).
+create or replace function public.sessao_professor()
+returns table (role text, token text)
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_token text;
+begin
+  delete from public.sessoes where expira_em < now() - interval '1 day';
+
+  v_token := encode(gen_random_bytes(24), 'hex');
+
+  insert into public.sessoes (token, role, expira_em)
+  values (v_token, 'professor', now() + interval '8 hours');
+
+  return query select 'professor'::text, v_token;
+end;
+$$;
+
+revoke all on function public.sessao_professor() from public;
+grant execute on function public.sessao_professor() to anon, authenticated;
+
 -- 5) Logout: invalida o token no servidor (não só localmente no navegador)
 create or replace function public.logout_usuario(p_token text)
 returns void

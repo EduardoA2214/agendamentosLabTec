@@ -26,6 +26,14 @@ function exigirPapel(roleEsperado, caminhoLogin) {
   return sessao;
 }
 
+function configurarNavegacao(botaoId, destino) {
+  const btn = document.getElementById(botaoId);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    window.location.href = destino;
+  });
+}
+
 function configurarLogout(botaoId, caminhoLogin) {
   const btn = document.getElementById(botaoId);
   if (!btn) return;

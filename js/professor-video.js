@@ -35,8 +35,8 @@ form.addEventListener('submit', async (e) => {
   btnSubmit.innerText = 'Verificando...';
 
   // 1) Antes de criar qualquer coisa, checa quais das aulas marcadas já
-  // estão ocupadas nesse dia (consulta somente leitura).
-  const { data: existentes, error: erroConsulta } = await supabaseClient.rpc('listar_agendamentos', {
+  // estão ocupadas nesse dia (consulta somente leitura), nessa sala.
+  const { data: existentes, error: erroConsulta } = await supabaseClient.rpc('listar_agendamentos_video', {
     p_token: sessao.token,
     p_data: data,
     p_professor: null,
@@ -51,7 +51,7 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  const rotulosOcupados = new Set((existentes || []).map((item) => item.aulas_agenda));
+  const rotulosOcupados = new Set((existentes || []).map((item) => item.aulas_agenda_video));
   const aulasOcupadas = aulasSelecionadas.filter((n) => rotulosOcupados.has(rotuloAula(n)));
   const aulasLivres = aulasSelecionadas.filter((n) => !rotulosOcupados.has(rotuloAula(n)));
 
@@ -79,7 +79,7 @@ form.addEventListener('submit', async (e) => {
 
   btnSubmit.innerText = 'Enviando...';
 
-  // 2) Cria um agendamento por aula liberada. A função criar_agendamento
+  // 2) Cria um agendamento por aula liberada. A função criar_agendamento_video
   // também recheca o conflito no banco (segurança contra duas pessoas
   // agendando ao mesmo tempo entre a verificação acima e este envio).
   const rotulosComFalha = [];
@@ -88,7 +88,7 @@ form.addEventListener('submit', async (e) => {
   for (const numeroAula of aulasParaCriar) {
     const data_hora = montarDataHora(data, numeroAula);
 
-    const { error } = await supabaseClient.rpc('criar_agendamento', {
+    const { error } = await supabaseClient.rpc('criar_agendamento_video', {
       p_token: sessao.token,
       p_nome_professor: nome_professor,
       p_nome_materia: nome_materia,
@@ -161,11 +161,11 @@ function renderizarAgendamentos(agendamentos) {
     const tr = document.createElement('tr');
 
     const campos = [
-      ['Professor', item.nome_professor],
-      ['Matéria', item.nome_materia],
-      ['Data/Hora', formatarDataHora(item.data_hora)],
-      ['Aula', item.aulas_agenda || '-'],
-      ['Descrição', item.descricao_aula || '-']
+      ['Professor', item.nome_professor_video],
+      ['Matéria', item.nome_materia_video],
+      ['Data/Hora', formatarDataHora(item.data_hora_video)],
+      ['Aula', item.aulas_agenda_video || '-'],
+      ['Descrição', item.descricao_aula_video || '-']
     ];
     campos.forEach(([rotulo, texto]) => {
       const td = document.createElement('td');
@@ -194,9 +194,7 @@ async function carregarAgendamentos() {
 
   celulaMensagem('Carregando...');
 
-  // Só leitura: professor pode consultar horários, mas não tem acesso à
-  // função de exclusão (essa continua exclusiva do administrador).
-  const { data: agendamentos, error } = await supabaseClient.rpc('listar_agendamentos', {
+  const { data: agendamentos, error } = await supabaseClient.rpc('listar_agendamentos_video', {
     p_token: sessao.token,
     p_data: data || null,
     p_professor: null,

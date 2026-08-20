@@ -3,8 +3,42 @@ const sessao = exigirPapel('administrador', '../index.html');
 
 configurarLogout('btn-logout', '../index.html');
 
+// Config de cada sala: qual função RPC chamar e qual o nome real de cada
+// coluna na tabela dela (a tabela de vídeo usa sufixo "_video" nos nomes).
+const SALAS = {
+  informatica: {
+    nome: 'Sala de Informática',
+    listar: 'listar_agendamentos',
+    excluir: 'excluir_agendamento',
+    campo: {
+      id: 'id',
+      professor: 'nome_professor',
+      materia: 'nome_materia',
+      data_hora: 'data_hora',
+      aula: 'aulas_agenda',
+      descricao: 'descricao_aula'
+    }
+  },
+  video: {
+    nome: 'Sala de Vídeo',
+    listar: 'listar_agendamentos_video',
+    excluir: 'excluir_agendamento_video',
+    campo: {
+      id: 'id',
+      professor: 'nome_professor_video',
+      materia: 'nome_materia_video',
+      data_hora: 'data_hora_video',
+      aula: 'aulas_agenda_video',
+      descricao: 'descricao_aula_video'
+    }
+  }
+};
+
+let salaAtual = 'informatica';
+
 const listaEl = document.getElementById('lista-agendamentos');
 const contadorEl = document.getElementById('contador-resultados');
+const tituloTabelaEl = document.getElementById('titulo-tabela');
 
 const filtroData = document.getElementById('filtro-data');
 const filtroProfessor = document.getElementById('filtro-professor');
@@ -29,6 +63,8 @@ function celulaMensagem(mensagem) {
 }
 
 function renderizarAgendamentos(agendamentos) {
+  const campo = SALAS[salaAtual].campo;
+
   listaEl.innerHTML = '';
   contadorEl.textContent = agendamentos
     ? `${agendamentos.length} agendamento${agendamentos.length === 1 ? '' : 's'}`
@@ -43,11 +79,11 @@ function renderizarAgendamentos(agendamentos) {
     const tr = document.createElement('tr');
 
     const campos = [
-      ['Professor', item.nome_professor],
-      ['Matéria', item.nome_materia],
-      ['Data/Hora', formatarDataHora(item.data_hora)],
-      ['Aula', item.aulas_agenda || '-'],
-      ['Descrição', item.descricao_aula || '-']
+      ['Professor', item[campo.professor]],
+      ['Matéria', item[campo.materia]],
+      ['Data/Hora', formatarDataHora(item[campo.data_hora])],
+      ['Aula', item[campo.aula] || '-'],
+      ['Descrição', item[campo.descricao] || '-']
     ];
     campos.forEach(([rotulo, texto]) => {
       const td = document.createElement('td');
@@ -62,7 +98,7 @@ function renderizarAgendamentos(agendamentos) {
     btnExcluir.type = 'button';
     btnExcluir.className = 'danger';
     btnExcluir.textContent = 'Excluir';
-    btnExcluir.addEventListener('click', () => excluirAgendamento(item.id));
+    btnExcluir.addEventListener('click', () => excluirAgendamento(item[campo.id]));
     tdAcoes.appendChild(btnExcluir);
     tr.appendChild(tdAcoes);
 
@@ -77,9 +113,9 @@ async function carregarAgendamentos() {
   const materia = filtroMateria.value.trim();
   const data = filtroData.value;
 
-  // A checagem de sessão e os filtros acontecem dentro do banco (função
-  // listar_agendamentos) — o front-end não lê a tabela diretamente.
-  const { data: agendamentos, error } = await supabaseClient.rpc('listar_agendamentos', {
+  // A checagem de sessão e os filtros acontecem dentro do banco — o
+  // front-end não lê a tabela diretamente, só chama a função da sala atual.
+  const { data: agendamentos, error } = await supabaseClient.rpc(SALAS[salaAtual].listar, {
     p_token: sessao.token,
     p_data: data || null,
     p_professor: professor || null,
@@ -100,7 +136,7 @@ async function excluirAgendamento(id) {
   const confirmado = await confirmar('Tem certeza que deseja excluir este agendamento? Essa ação não pode ser desfeita.');
   if (!confirmado) return;
 
-  const { error } = await supabaseClient.rpc('excluir_agendamento', {
+  const { error } = await supabaseClient.rpc(SALAS[salaAtual].excluir, {
     p_token: sessao.token,
     p_id: id
   });
@@ -114,6 +150,25 @@ async function excluirAgendamento(id) {
   mostrarToast('Agendamento excluído com sucesso.', 'sucesso');
   carregarAgendamentos();
 }
+
+document.querySelectorAll('.aba-sala').forEach((aba) => {
+  aba.addEventListener('click', () => {
+    if (aba.dataset.sala === salaAtual) return;
+
+    salaAtual = aba.dataset.sala;
+
+    document.querySelectorAll('.aba-sala').forEach((outra) => outra.classList.remove('ativa'));
+    aba.classList.add('ativa');
+
+    tituloTabelaEl.textContent = `Agendamentos — ${SALAS[salaAtual].nome}`;
+
+    filtroData.value = '';
+    filtroProfessor.value = '';
+    filtroMateria.value = '';
+
+    carregarAgendamentos();
+  });
+});
 
 document.getElementById('btn-buscar').addEventListener('click', carregarAgendamentos);
 
