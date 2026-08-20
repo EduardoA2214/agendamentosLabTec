@@ -160,14 +160,15 @@ function renderizarAgendamentos(agendamentos) {
     const tr = document.createElement('tr');
 
     const campos = [
-      item.nome_professor,
-      item.nome_materia,
-      formatarDataHora(item.data_hora),
-      item.aulas_agenda || '-',
-      item.descricao_aula || '-'
+      ['Professor', item.nome_professor],
+      ['Matéria', item.nome_materia],
+      ['Data/Hora', formatarDataHora(item.data_hora)],
+      ['Aula', item.aulas_agenda || '-'],
+      ['Descrição', item.descricao_aula || '-']
     ];
-    campos.forEach((texto) => {
+    campos.forEach(([rotulo, texto]) => {
       const td = document.createElement('td');
+      td.dataset.label = rotulo;
       td.textContent = texto;
       tr.appendChild(td);
     });
