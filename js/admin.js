@@ -35,14 +35,31 @@ const SALAS = {
 };
 
 let salaAtual = 'informatica';
+const selecionados = new Set();
 
 const listaEl = document.getElementById('lista-agendamentos');
 const contadorEl = document.getElementById('contador-resultados');
 const tituloTabelaEl = document.getElementById('titulo-tabela');
+const checkTodos = document.getElementById('check-todos');
+const btnExcluirSelecionados = document.getElementById('btn-excluir-selecionados');
 
 const filtroData = document.getElementById('filtro-data');
 const filtroProfessor = document.getElementById('filtro-professor');
 const filtroMateria = document.getElementById('filtro-materia');
+
+function atualizarBotaoLote() {
+  const total = selecionados.size;
+  btnExcluirSelecionados.disabled = total === 0;
+  btnExcluirSelecionados.textContent = total === 0
+    ? 'Excluir selecionados'
+    : `Excluir selecionados (${total})`;
+}
+
+function limparSelecao() {
+  selecionados.clear();
+  checkTodos.checked = false;
+  atualizarBotaoLote();
+}
 
 function formatarDataHora(valor) {
   if (!valor) return '';
@@ -55,7 +72,7 @@ function celulaMensagem(mensagem) {
   listaEl.innerHTML = '';
   const tr = document.createElement('tr');
   const td = document.createElement('td');
-  td.colSpan = 6;
+  td.colSpan = 7;
   td.className = 'vazio';
   td.textContent = mensagem;
   tr.appendChild(td);
@@ -66,6 +83,7 @@ function renderizarAgendamentos(agendamentos) {
   const campo = SALAS[salaAtual].campo;
 
   listaEl.innerHTML = '';
+  limparSelecao();
   contadorEl.textContent = agendamentos
     ? `${agendamentos.length} agendamento${agendamentos.length === 1 ? '' : 's'}`
     : '';
@@ -77,6 +95,25 @@ function renderizarAgendamentos(agendamentos) {
 
   agendamentos.forEach((item) => {
     const tr = document.createElement('tr');
+    const id = item[campo.id];
+
+    const tdCheck = document.createElement('td');
+    tdCheck.className = 'col-check';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.id = id;
+    checkbox.setAttribute('aria-label', 'Selecionar este agendamento');
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selecionados.add(id);
+      } else {
+        selecionados.delete(id);
+        checkTodos.checked = false;
+      }
+      atualizarBotaoLote();
+    });
+    tdCheck.appendChild(checkbox);
+    tr.appendChild(tdCheck);
 
     const campos = [
       ['Professor', item[campo.professor]],
@@ -98,7 +135,7 @@ function renderizarAgendamentos(agendamentos) {
     btnExcluir.type = 'button';
     btnExcluir.className = 'danger';
     btnExcluir.textContent = 'Excluir';
-    btnExcluir.addEventListener('click', () => excluirAgendamento(item[campo.id]));
+    btnExcluir.addEventListener('click', () => excluirAgendamento(id));
     tdAcoes.appendChild(btnExcluir);
     tr.appendChild(tdAcoes);
 
@@ -107,6 +144,7 @@ function renderizarAgendamentos(agendamentos) {
 }
 
 async function carregarAgendamentos() {
+  limparSelecao();
   celulaMensagem('Carregando...');
 
   const professor = filtroProfessor.value.trim();
@@ -150,6 +188,59 @@ async function excluirAgendamento(id) {
   mostrarToast('Agendamento excluído com sucesso.', 'sucesso');
   carregarAgendamentos();
 }
+
+checkTodos.addEventListener('change', () => {
+  const checkboxes = listaEl.querySelectorAll('td.col-check input[type="checkbox"]');
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = checkTodos.checked;
+    const id = Number(checkbox.dataset.id);
+    if (checkTodos.checked) {
+      selecionados.add(id);
+    } else {
+      selecionados.delete(id);
+    }
+  });
+  atualizarBotaoLote();
+});
+
+document.getElementById('btn-excluir-selecionados').addEventListener('click', async () => {
+  const ids = Array.from(selecionados);
+  if (ids.length === 0) return;
+
+  const confirmado = await confirmar(
+    `Tem certeza que deseja excluir ${ids.length} agendamento(s) selecionado(s)? Essa ação não pode ser desfeita.`
+  );
+  if (!confirmado) return;
+
+  btnExcluirSelecionados.disabled = true;
+
+  let totalExcluido = 0;
+  const falhas = [];
+
+  for (const id of ids) {
+    const { error } = await supabaseClient.rpc(SALAS[salaAtual].excluir, {
+      p_token: sessao.token,
+      p_id: id
+    });
+
+    if (error) {
+      falhas.push(id);
+      console.error('Erro detalhado:', error);
+    } else {
+      totalExcluido++;
+    }
+  }
+
+  if (totalExcluido > 0 && falhas.length === 0) {
+    mostrarToast(`${totalExcluido} agendamento(s) excluído(s) com sucesso.`, 'sucesso');
+  } else if (totalExcluido > 0) {
+    mostrarToast(`${totalExcluido} excluído(s), ${falhas.length} falharam.`, 'erro');
+  } else {
+    mostrarToast('Não foi possível excluir os agendamentos selecionados.', 'erro');
+  }
+
+  carregarAgendamentos();
+});
 
 document.querySelectorAll('.aba-sala').forEach((aba) => {
   aba.addEventListener('click', () => {

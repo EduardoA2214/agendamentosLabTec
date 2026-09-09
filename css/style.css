@@ -219,6 +219,17 @@ input[type="checkbox"] { width: auto; }
 
 .aba-sala.ativa:hover { background-color: var(--azul-marinho-escuro); }
 
+.acoes-lote {
+  max-width: 900px;
+  margin: 0 auto 10px auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.acoes-lote button { width: auto; padding: 8px 16px; }
+
+th.col-check, td.col-check { text-align: center; width: 36px; }
+
 .filtros {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -434,6 +445,12 @@ td.acoes button { width: auto; padding: 6px 12px; font-size: 13px; }
   td.acoes { justify-content: center; }
   td.acoes::before { content: none; }
   td.acoes button { width: 100%; padding: 8px 14px; }
+
+  td.col-check {
+    justify-content: center;
+    background: var(--azul-marinho-claro);
+  }
+  td.col-check::before { content: 'Selecionar'; }
 
   /* Mensagens (carregando/vazio/instrução) não são "linhas de dado" —
      mantém centralizado em vez de virar cartão com rótulo. */

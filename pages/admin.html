@@ -49,10 +49,16 @@
       <h2 id="titulo-tabela">Agendamentos — Sala de Informática</h2>
       <span id="contador-resultados" class="contador"></span>
     </div>
+
+    <div class="acoes-lote">
+      <button type="button" class="danger" id="btn-excluir-selecionados" disabled>Excluir selecionados</button>
+    </div>
+
     <div class="tabela-wrap">
       <table>
         <thead>
           <tr>
+            <th class="col-check"><input type="checkbox" id="check-todos" aria-label="Selecionar todos"></th>
             <th>Professor</th>
             <th>Matéria</th>
             <th>Data/Hora</th>
@@ -62,7 +68,7 @@
           </tr>
         </thead>
         <tbody id="lista-agendamentos">
-          <tr><td colspan="6" class="vazio">Carregando...</td></tr>
+          <tr><td colspan="7" class="vazio">Carregando...</td></tr>
         </tbody>
       </table>
     </div>
